@@ -4,9 +4,8 @@
 # Team ID:          ld_1119
 # Theme:            Luminosity Drone
 # Authors List:     Elango S, Hemasri m
-# Filename:         LD_1119_image_detection.py
-# Class:        	swift
-# Global variables: None
+# Filename:         LD_1119_led_detection.py
+# Global variables: parser, args, image_path, image, gray, blurred, thresh, labels, mask, cnts, led_count, centroid_list, area_list, led_centroids, threshold_distance, linkage_matrix, labels, clusters
 '''
 
 
