@@ -40,20 +40,26 @@
 
 
 # import the necessary packages
-# Clustering imports
-# from icecream import ic
 
 
-# Create ArgumentParser object
+
+
+
+#image processing imports
 from imutils import contours
 from skimage import measure
 import numpy as np
 import imutils
 import cv2
+#Command line arugment imports  
 import argparse
+# Clustering imports
 from scipy.cluster.hierarchy import linkage, fcluster, dendrogram
 from collections import Counter
 import numpy as np
+# from icecream import ic
+
+# Create ArgumentParser object
 parser = argparse.ArgumentParser(description='Image detection script.')
 
 # Add arguments
