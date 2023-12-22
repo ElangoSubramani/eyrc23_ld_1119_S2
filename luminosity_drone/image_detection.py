@@ -1,3 +1,46 @@
+#!/usr/bin/env python3
+
+'''
+# Team ID:          ld_1119
+# Theme:            Luminosity Drone
+# Authors List:     Elango S, Hemasri m
+# Filename:         LD_1119_image_detection.py
+# Class:        	swift
+# Global variables: None
+'''
+
+
+"""
+    This python file runs a image processing algorithm to detect the LEDs in the image.
+
+    The algorithm is based on the following steps:
+
+    1. Convert the image to grayscale and blur it slightly.
+    2. Threshold the image to reveal light regions in the blurred image.
+    3. Perform a series of erosions and dilations to remove any small blobs of noise from the thresholded image.    
+    4. Perform a connected component analysis on the thresholded image, then initialize a mask to store only the "large" components.
+    5. Loop over the unique components.
+    6. If the number of pixels in the component is sufficiently large, then add it to our mask of "large blobs".
+    7. Find the contours in the mask, then sort them from left to right.
+    8. Loop over the contours.
+    9. Calculate the area of the contour.
+    10. Calculate the centroid.
+    11. Increment the LED count and draw the LED number as "+1", "+2", and so on.
+    12. Calculate the contour perimeter for more accurate border size.
+    13. Draw the red border with the calculated perimeter.
+    14. Save the output image as a PNG file.
+    15. Define the distance threshold.
+    16. Perform hierarchical clustering.
+    17. Assign clusters based on the distance threshold.
+    18. Open a text file for writing.
+    19. Write Organism Type, centroid coordinates and area for each LED to the file.
+    22. Close the file.
+
+
+"""
+
+
+
 # import the necessary packages
 from imutils import contours
 from skimage import measure
@@ -5,6 +48,12 @@ import numpy as np
 import imutils
 import cv2
 import argparse
+# Clustering imports
+from scipy.cluster.hierarchy import linkage, fcluster, dendrogram
+from collections import Counter
+import numpy as np
+# from icecream import ic
+
 
 # Create ArgumentParser object
 parser = argparse.ArgumentParser(description='Image detection script.')
@@ -18,8 +67,8 @@ args = parser.parse_args()
 # Access the value of the argument
 image_path = args.image_path
 
-# Use the argument value in your script
-print(f'The path to the image is: {image_path}')
+# # Use the argument value in your script
+# print(f'The path to the image is: {image_path}')
 
 
 image = cv2.imread(image_path, 1)
@@ -97,15 +146,59 @@ for i, c in enumerate(cnts):
 cv2.imwrite("led_detection_results.png", image)
 # ...
 
+# //////////////////////////////////////////////////
+
+led_centroids = np.array(centroid_list)
+# Define the distance threshold
+threshold_distance = 300.0
+
+# Perform hierarchical clustering
+linkage_matrix = linkage(led_centroids, method='ward', metric='euclidean')
+
+# Assign clusters based on the distance threshold
+labels = fcluster(linkage_matrix, t=threshold_distance, criterion='distance')
+clusters = {f"cluster_{i}": (
+    led_centroids[labels == i]).tolist() for i in np.unique(labels)}
+# print(clusters)
+
+
+for name, value in clusters.items():
+    clusters[name] = {
+        "values": value,
+        "centroid": np.mean(value, axis=0).tolist(),
+        "count": len(value)
+    }
+    if clusters[name]["count"] == 2:
+        clusters[name]["type"] = "alien_a"
+        # clusters[name]["centroid2"]=[(clusters[name]["values"][0][0])+(clusters[name]["values"][1][0])/len(clusters[name]["values"]), (clusters[name]["values"][0][1])+(clusters[name]["values"][1][1])/len(clusters[name]["values"])]
+
+    elif clusters[name]["count"] == 3:
+        clusters[name]["type"] = "alien_b"
+    elif clusters[name]["count"] == 4:
+        clusters[name]["type"] = "alien_c"
+    elif clusters[name]["count"] == 5:
+        clusters[name]["type"] = "alien_d"
+
+# for name,value in clusters.items():
+#     ic(name,value)
+# print(clusters)
 # ...
 
 # Open a text file for writing
 with open("led_detection_results.txt", "w") as file:
     # Write the number of LEDs detected to the file
-    file.write(f"No. of LEDs detected: {led_count}\n")
+    # file.write(f"No. of LEDs detected: {led_count}\n")
 
     # Loop over the contours
-    for i, (centroid, area) in enumerate(zip(centroid_list, area_list)):
-        # Write centroid coordinates and area for each LED to the file
-        file.write(f"Centroid #{i + 1}: {centroid}\nArea #{i + 1}: {area}\n")
+    # for i, (centroid, area) in enumerate(zip(centroid_list, area_list)):
+    #     # Write centroid coordinates and area for each LED to the file
+    #     file.write(f"Centroid #{i + 1}: {centroid}\nArea #{i + 1}: {area}\n")
+    #     file.write("\n")
+    for name, value in clusters.items():
+        # type=clusters[name]["type"]
+        centroid = clusters[name]["centroid"]
+        # file.write(f"Organism Type: {type}\n")
+        file.write(f"Centroid: {centroid}\n")
         file.write("\n")
+    # Close the file
+    file.close()
