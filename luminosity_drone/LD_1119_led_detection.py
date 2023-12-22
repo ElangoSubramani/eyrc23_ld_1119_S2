@@ -40,32 +40,31 @@
 """
 
 
-
 # import the necessary packages
+# Clustering imports
+# from icecream import ic
+
+
+# Create ArgumentParser object
 from imutils import contours
 from skimage import measure
 import numpy as np
 import imutils
 import cv2
 import argparse
-# Clustering imports
 from scipy.cluster.hierarchy import linkage, fcluster, dendrogram
 from collections import Counter
 import numpy as np
-# from icecream import ic
-
-
-# Create ArgumentParser object
 parser = argparse.ArgumentParser(description='Image detection script.')
 
 # Add arguments
-parser.add_argument('image_path', help='Path to the image file.')
+parser.add_argument('--image', help='Path to the image file.')
 
 # Parse the command line arguments
 args = parser.parse_args()
 
 # Access the value of the argument
-image_path = args.image_path
+image_path = args.image
 
 # # Use the argument value in your script
 # print(f'The path to the image is: {image_path}')
@@ -73,7 +72,7 @@ image_path = args.image_path
 
 image = cv2.imread(image_path, 1)
 
-# convert it to grayscale, and blur it7
+# convert it to grayscale, and blur it
 gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 blurred = cv2.GaussianBlur(gray, (11, 11), 0)
 
@@ -113,9 +112,7 @@ cnts = contours.sort_contours(cnts)[0]
 centroid_list = []
 area_list = []
 
-# Loop over the contours
-# ...
-# Loop over the contours
+
 led_count = 0
 for i, c in enumerate(cnts):
     # Calculate the area of the contour
@@ -139,7 +136,7 @@ for i, c in enumerate(cnts):
     perimeter = cv2.arcLength(c, True)
 
     # Draw the red border with the calculated perimeter
-    # Adjust the divisor for border thickness
+
     cv2.drawContours(image, [c], -1, (0, 0, 255), int(perimeter/70))
 
 # Save the output image as a PNG file
@@ -147,7 +144,7 @@ cv2.imwrite("led_detection_results.png", image)
 # ...
 
 # //////////////////////////////////////////////////
-
+# LED centeroid ariable used for clustering
 led_centroids = np.array(centroid_list)
 # Define the distance threshold
 threshold_distance = 300.0
@@ -170,7 +167,6 @@ for name, value in clusters.items():
     }
     if clusters[name]["count"] == 2:
         clusters[name]["type"] = "alien_a"
-        # clusters[name]["centroid2"]=[(clusters[name]["values"][0][0])+(clusters[name]["values"][1][0])/len(clusters[name]["values"]), (clusters[name]["values"][0][1])+(clusters[name]["values"][1][1])/len(clusters[name]["values"])]
 
     elif clusters[name]["count"] == 3:
         clusters[name]["type"] = "alien_b"
@@ -195,9 +191,9 @@ with open("led_detection_results.txt", "w") as file:
     #     file.write(f"Centroid #{i + 1}: {centroid}\nArea #{i + 1}: {area}\n")
     #     file.write("\n")
     for name, value in clusters.items():
-        # type=clusters[name]["type"]
+        type = clusters[name]["type"]
         centroid = clusters[name]["centroid"]
-        # file.write(f"Organism Type: {type}\n")
+        file.write(f"Organism Type: {type}\n")
         file.write(f"Centroid: {centroid}\n")
         file.write("\n")
     # Close the file
