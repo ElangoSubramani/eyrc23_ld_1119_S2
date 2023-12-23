@@ -70,7 +70,6 @@ args = parser.parse_args()
 
 # Access the value of the argument
 image_path = args.image
-
 # # Use the argument value in your script
 # print(f'The path to the image is: {image_path}')
 
@@ -186,7 +185,7 @@ for name, value in clusters.items():
 # ...
 
 # Open a text file for writing
-with open("led_detection_results.txt", "w") as file:
+with open(f"{image_path[0:(len(image_path)-4):]}.txt", "w") as file:
     # Write the number of LEDs detected to the file
     # file.write(f"No. of LEDs detected: {led_count}\n")
 
