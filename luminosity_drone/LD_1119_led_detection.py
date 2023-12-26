@@ -42,24 +42,21 @@
 # import the necessary packages
 
 
+# image processing imports
+# Command line arugment imports
+# Clustering imports
+# from icecream import ic
 
-
-
-#image processing imports
+# Create ArgumentParser object
 from imutils import contours
 from skimage import measure
 import numpy as np
 import imutils
 import cv2
-#Command line arugment imports  
 import argparse
-# Clustering imports
 from scipy.cluster.hierarchy import linkage, fcluster, dendrogram
 from collections import Counter
 import numpy as np
-# from icecream import ic
-
-# Create ArgumentParser object
 parser = argparse.ArgumentParser(description='Image detection script.')
 
 # Add arguments
@@ -78,7 +75,8 @@ image = cv2.imread(image_path, 1)
 
 # convert it to grayscale, and blur it
 gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-blurred = cv2.GaussianBlur(gray, (5, 5), 0) #11,11 converted to 5,5 to blur less
+# 11,11 converted to 5,5 to blur less
+blurred = cv2.GaussianBlur(gray, (5, 5), 0)
 
 # threshold the image to reveal light regions in the blurred image
 thresh = cv2.threshold(blurred, 215, 255, cv2.THRESH_BINARY)[1]
@@ -154,6 +152,7 @@ led_centroids = np.array(centroid_list)
 threshold_distance = 300.0
 
 # Perform hierarchical clustering
+# complete #ward both compatable for cluster merging wird is used for irregular shaped clusters and complete is used for spherical based cluster
 linkage_matrix = linkage(led_centroids, method='ward', metric='euclidean')
 
 # Assign clusters based on the distance threshold
