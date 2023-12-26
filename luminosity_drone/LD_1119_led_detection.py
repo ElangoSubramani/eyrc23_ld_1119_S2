@@ -78,7 +78,7 @@ image = cv2.imread(image_path, 1)
 
 # convert it to grayscale, and blur it
 gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-blurred = cv2.GaussianBlur(gray, (11, 11), 0)
+blurred = cv2.GaussianBlur(gray, (5, 5), 0) #11,11 converted to 5,5 to blur less
 
 # threshold the image to reveal light regions in the blurred image
 thresh = cv2.threshold(blurred, 215, 255, cv2.THRESH_BINARY)[1]
