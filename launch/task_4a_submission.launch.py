@@ -1,3 +1,4 @@
+import launch
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 from launch import LaunchDescription
@@ -20,6 +21,10 @@ def generate_launch_description():
         )
     )
    
+    rosbag =   launch.actions.ExecuteProcess(
+            cmd=['ros2', 'bag', 'record', '/whycon/poses'],
+            output='screen'
+        )
 
     controller = LaunchDescription([
         Node(
@@ -41,5 +46,6 @@ def generate_launch_description():
     return LaunchDescription([
         pid,
         plotjuggler,
-        controller 
+        controller,
+        rosbag
         ])

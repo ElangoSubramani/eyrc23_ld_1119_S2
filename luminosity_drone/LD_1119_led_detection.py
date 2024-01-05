@@ -45,7 +45,7 @@
 # image processing imports
 # Command line arugment imports
 # Clustering imports
-# from icecream import ic
+from icecream import ic
 
 # Create ArgumentParser object
 from imutils import contours
@@ -161,7 +161,7 @@ clusters = {f"cluster_{i}": (
     led_centroids[labels == i]).tolist() for i in np.unique(labels)}
 # print(clusters)
 
-
+ic(clusters)
 for name, value in clusters.items():
     clusters[name] = {
         "values": value,
