@@ -58,7 +58,7 @@ class DroneController():
         self.arming_service_client = self.node.create_client(
             CommandBool, service_endpoint)
         # Setpoints for x, y, z respectively
-        self.set_points = [0, 0, 0]
+        self.set_points = [0, 0, 22]
 
         # Current Error for roll, pitch and throttle
         self.error = [0, 0, 0]
@@ -171,12 +171,15 @@ class DroneController():
 
         # 0 : calculating Error, Derivative, Integral for Roll error : x axis
         try:
-            self.error[0] = self.drone_whycon_pose_array.poses[0].position.x - \
-                self.set_points[0]
-            self.error[1] = self.drone_whycon_pose_array.poses[0].position.y - \
-                self.set_points[1]
-            self.error[2] = self.drone_whycon_pose_array.poses[0].position.z - \
-                self.set_points[2]
+            # Why con pose array is a list of poses. We are using only the first pose.
+            # Other wise it shows list out of bound exception
+            if self.drone_whycon_pose_array.poses:
+                self.error[0] = self.drone_whycon_pose_array.poses[0].position.x - \
+                    self.set_points[0]
+                self.error[1] = self.drone_whycon_pose_array.poses[0].position.y - \
+                    self.set_points[1]
+                self.error[2] = self.drone_whycon_pose_array.poses[0].position.z - \
+                    self.set_points[2]
         # Catch the exception thrown by anything wrong happens in calculating error and print the error message
 
         except Exception as e:
@@ -231,7 +234,7 @@ class DroneController():
                 pitch_error=float(self.error[1]),
                 throttle_error=float(self.error[2]),
                 yaw_error=-0.0,
-                zero_error=0.0,
+                zero_error=self.throttle,
             )
         )
 
@@ -318,11 +321,13 @@ def main(args=None):
     try:
         while rclpy.ok():
             controller.pid()
-            if node.get_clock().now().to_msg().sec - controller.last_whycon_pose_received_at > 1:
+            # print(controller.last_whycon_pose_received_at)
+            if (node.get_clock().now().to_msg().sec - controller.last_whycon_pose_received_at) > 1:
+              
                 node.get_logger().error("Unable to detect WHYCON poses")
             # Sleep for 1/30 secs, It will give 0.033 Secs to complete the single spin (Callbacks..)
-            rclpy.spin_once(node)
-            time.sleep(0.033)
+            rclpy.spin_once(node, timeout_sec=0.033)
+            # time.sleep(0.033)
 
     except Exception as err:
         print("main function exception", (err))
