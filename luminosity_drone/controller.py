@@ -20,6 +20,7 @@ from geometry_msgs.msg import PoseArray
 from pid_msg.msg import PidTune
 from swift_msgs.msg import PIDError, RCMessage
 from swift_msgs.srv import CommandBool
+from std_msgs.msg import Float64
 
 
 # Constants for ROLL, PITCH and THROTTLE min,max,base and sum_error limits.
@@ -35,8 +36,8 @@ MAX_PITCH = 1600
 SUM_ERROR_PITCH_LIMIT = 10000
 
 MIN_TROTTLE = 1250
-BASE_ROLL = 1500
-MAX_ROLL = 1600
+BASE_TROTTLE = 1500
+MAX_TROTTLE = 1600
 SUM_ERROR_THROTTLE_LIMIT = 10000
 
 
@@ -44,7 +45,7 @@ DRONE_WHYCON_POSE = [[], [], []]
 
 
 class DroneController():
-   
+
     def __init__(self, node):
         self.node = node
 
@@ -91,11 +92,11 @@ class DroneController():
         # Subscribe to roll
         self.pid_roll = node.create_subscription(
             PidTune, "/pid_tuning_roll", self.pid_tune_roll_callback, 1)
-        
+
         # Subscribe to pitch
         self.pid_pitch = node.create_subscription(
             PidTune, "/pid_tuning_pitch", self.pid_tune_pitch_callback, 1)
-        
+
         # Subscribe to throttle
         self.pid_alt = node.create_subscription(
             PidTune, "/pid_tuning_altitude", self.pid_tune_throttle_callback, 1)
@@ -108,6 +109,29 @@ class DroneController():
 
         self.pid_error_pub = node.create_publisher(
             PIDError, "/luminosity_drone/pid_error", 1)
+
+        # Mannually added publishers for plotting in plotjuggler
+        self.zero_publisher = node.create_publisher(Float64, 'zero_topic', 1)
+        self.lower_bound_publisher = node.create_publisher(
+            Float64, 'lower_bound_topic', 1)
+        self.upper_bound_publisher = node.create_publisher(
+            Float64, 'upper_bound_topic', 1)
+        self.throttle_publisher = node.create_publisher(
+            Float64, 'throttle_topic', 1)
+
+    def custom_callback(self):
+        # Publish values to respective topics
+        zero_msg = Float64()
+        zero_msg.data = 0.0
+        self.zero_publisher.publish(zero_msg)
+
+        lower_bound_msg = Float64()
+        lower_bound_msg.data = -5.0
+        self.lower_bound_publisher.publish(lower_bound_msg)
+
+        upper_bound_msg = Float64()
+        upper_bound_msg.data = 5.0
+        self.upper_bound_publisher.publish(upper_bound_msg)
 
     def whycon_poses_callback(self, msg):
         self.last_whycon_pose_received_at = self.node.get_clock(
@@ -149,17 +173,17 @@ class DroneController():
         try:
             self.error[0] = self.drone_whycon_pose_array.poses[0].position.x - \
                 self.set_points[0]
-            self.error[1] = self.drone_whycon_pose_array.poses[1].position.y - \
+            self.error[1] = self.drone_whycon_pose_array.poses[0].position.y - \
                 self.set_points[1]
-            self.error[2] = self.drone_whycon_pose_array.poses[2].position.z - \
+            self.error[2] = self.drone_whycon_pose_array.poses[0].position.z - \
                 self.set_points[2]
         # Catch the exception thrown by anything wrong happens in calculating error and print the error message
 
         except Exception as e:
-            print(e)
+            print("PID exception", e)
 
         # Calculate derivative and intergral errors. Apply anti windup on integral error (You can use your own method for anti windup, an example is shown here)
-        
+
         self.derivative_error[0] = self.error[0] - self.previous_error[0]
         self.derivative_error[1] = self.error[1] - self.previous_error[1]
         self.derivative_error[2] = self.error[2] - self.previous_error[2]
@@ -168,16 +192,29 @@ class DroneController():
         self.sum_error[2] = self.sum_error[2] + self.error[2]
 
         # Check for sum_error limits and apply anti windup.
-        self.sum_error[0] = self.limit(self.sum_error[0], SUM_ERROR_ROLL_LIMIT, -SUM_ERROR_ROLL_LIMIT)
-        self.sum_error[1] = self.limit(self.sum_error[1], SUM_ERROR_PITCH_LIMIT, -SUM_ERROR_PITCH_LIMIT)
-        self.sum_error[2] = self.limit(self.sum_error[2], SUM_ERROR_THROTTLE_LIMIT, -SUM_ERROR_THROTTLE_LIMIT)
-        
+        self.sum_error[0] = self.limit(
+            self.sum_error[0], SUM_ERROR_ROLL_LIMIT, -SUM_ERROR_ROLL_LIMIT)
+        self.sum_error[1] = self.limit(
+            self.sum_error[1], SUM_ERROR_PITCH_LIMIT, -SUM_ERROR_PITCH_LIMIT)
+        self.sum_error[2] = self.limit(
+            self.sum_error[2], SUM_ERROR_THROTTLE_LIMIT, -SUM_ERROR_THROTTLE_LIMIT)
 
         # Save current error in previous error
-        self.previous_error=self.error
+        self.previous_error = self.error
 
         # 1 : calculating Error, Derivative, Integral for Pitch error : y axis
-        
+        self.roll = 1500+(self.Kp[0]*self.error[0]+self.Ki[0]
+                          * self.sum_error[0]+self.Kd[0]*self.derivative_error[0])
+        self.pitch = 1500+(self.Kp[1]*self.error[1]+self.Ki[1]
+                           * self.sum_error[1]+self.Kd[1]*self.derivative_error[1])
+        self.throttle = 1500 + (self.Kp[2]*self.error[2]+self.Ki[2]
+                                * self.sum_error[2]+self.Kd[2]*self.derivative_error[2])
+
+        self.throttle = self.limit(self.throttle, MAX_TROTTLE, MIN_TROTTLE)
+        self.pitch = self.limit(self.pitch, MAX_PITCH, MIN_PITCH)
+        self.roll = self.limit(self.roll, MAX_ROLL, MIN_ROLL)
+        # This will call the custom_callback function to publish values for plotting in plotjuggler
+        self.custom_callback()
 
         # 2 : calculating Error, Derivative, Integral for Alt error : z axis
 
@@ -185,9 +222,7 @@ class DroneController():
 
     # ------------------------------------------------------------------------------------------------------------------------
 
-        # Replaced 1000 by 1450 as instruced in the video
-        # 1450 have top speed while arming the drone so reduced all to the 1000
-        self.publish_data_to_rpi(roll=1000, pitch=1000, throttle=1000)
+        self.publish_data_to_rpi(self.roll, self.pitch, self.throttle)
 
         # Replace the roll pitch and throttle values as calculated by PID
 
@@ -286,7 +321,7 @@ def main(args=None):
             time.sleep(0.033)
 
     except Exception as err:
-        print(err)
+        print("main function exception", (err))
 
     finally:
         controller.shutdown_hook()
