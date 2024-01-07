@@ -82,13 +82,20 @@ class DroneController():
         # 2. Complete PID Algorithm
         # 3. Test the algorithm mannually
 
-        # Create subscriber for WhyCon
+        # Whycon subscriber
 
         self.whycon_sub = node.create_subscription(
             PoseArray, "/whycon/poses", self.whycon_poses_callback, 1)
 
-        # Similarly create subscribers for pid_tuning_altitude, pid_tuning_roll, pid_tuning_pitch and any other subscriber if required
-
+        # Subscribe to roll
+        self.pid_roll = node.create_subscription(
+            PidTune, "/pid_tuning_roll", self.pid_tune_roll_callback, 1)
+        
+        # Subscribe to pitch
+        self.pid_pitch = node.create_subscription(
+            PidTune, "/pid_tuning_pitch", self.pid_tune_pitch_callback, 1)
+        
+        # Subscribe to throttle
         self.pid_alt = node.create_subscription(
             PidTune, "/pid_tuning_altitude", self.pid_tune_throttle_callback, 1)
 
@@ -106,8 +113,24 @@ class DroneController():
         ).now().seconds_nanoseconds()[0]
         self.drone_whycon_pose_array = msg
 
+    # Callback function for roll
+
+    def pid_tune_roll_callback(self, msg):
+        self.Kp[0] = msg.kp * 0.05
+        self.Ki[0] = msg.ki * 0.0001
+        self.Kd[0] = msg.kd * 0.1
+
+    # Callback function for pitch
+
+    def pid_tune_pitch_callback(self, msg):
+        self.Kp[1] = msg.kp * 0.05
+        self.Ki[1] = msg.ki * 0.0001
+        self.Kd[1] = msg.kd * 0.1
+
+    # Callback function for throttle
+
     def pid_tune_throttle_callback(self, msg):
-        self.Kp[2] = msg.kp * 0.01
+        self.Kp[2] = msg.kp * 0.05
         self.Ki[2] = msg.ki * 0.0001
         self.Kd[2] = msg.kd * 0.1
 
@@ -145,7 +168,8 @@ class DroneController():
     # ------------------------------------------------------------------------------------------------------------------------
 
         # Replaced 1000 by 1450 as instruced in the video
-        self.publish_data_to_rpi(roll=1500, pitch=1500, throttle=1450)
+        # 1450 have top speed while arming the drone so reduced all to the 1000
+        self.publish_data_to_rpi(roll=1000, pitch=1000, throttle=1000)
 
         # Replace the roll pitch and throttle values as calculated by PID
 
@@ -231,7 +255,7 @@ def main(args=None):
     node.get_logger().info("Entering PID controller loop")
 
     controller = DroneController(node)
-    controller.arm()
+    # controller.arm() #cTemporarily commented for testing
     node.get_logger().info("Armed")
 
     try:
@@ -240,7 +264,8 @@ def main(args=None):
             if node.get_clock().now().to_msg().sec - controller.last_whycon_pose_received_at > 1:
                 node.get_logger().error("Unable to detect WHYCON poses")
             # Sleep for 1/30 secs, It will give 0.033 Secs to complete the single spin (Callbacks..)
-            rclpy.spin_once(node, timeout_sec=0.033)
+            rclpy.spin_once(node)
+            time.sleep(0.033)
 
     except Exception as err:
         print(err)
