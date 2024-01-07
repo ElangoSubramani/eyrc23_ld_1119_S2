@@ -323,7 +323,7 @@ def main(args=None):
             controller.pid()
             # print(controller.last_whycon_pose_received_at)
             if (node.get_clock().now().to_msg().sec - controller.last_whycon_pose_received_at) > 1:
-              
+
                 node.get_logger().error("Unable to detect WHYCON poses")
             # Sleep for 1/30 secs, It will give 0.033 Secs to complete the single spin (Callbacks..)
             rclpy.spin_once(node, timeout_sec=0.033)
