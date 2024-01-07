@@ -109,6 +109,8 @@ class DroneController():
         # 0 : calculating Error, Derivative, Integral for Roll error : x axis
         try:
             self.error[0] = self.drone_whycon_pose_array.poses[0].position.x - self.set_points[0] 
+            self.error[1] = self.drone_whycon_pose_array.poses[1].position.y - self.set_points[1]
+            self.error[2] = self.drone_whycon_pose_array.poses[2].position.z - self.set_points[2]             
         # Similarly calculate error for y and z axes 
         
         except:
