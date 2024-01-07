@@ -44,6 +44,7 @@ DRONE_WHYCON_POSE = [[], [], []]
 
 
 class DroneController():
+   
     def __init__(self, node):
         self.node = node
 
@@ -134,6 +135,14 @@ class DroneController():
         self.Ki[2] = msg.ki * 0.0001
         self.Kd[2] = msg.kd * 0.1
 
+    def limit(self, input_value, max_value, min_value):
+        if input_value > max_value:
+            return max_value
+        if input_value < min_value:
+            return min_value
+        else:
+            return input_value
+
     def pid(self):          # PID algorithm
 
         # 0 : calculating Error, Derivative, Integral for Roll error : x axis
@@ -144,22 +153,31 @@ class DroneController():
                 self.set_points[1]
             self.error[2] = self.drone_whycon_pose_array.poses[2].position.z - \
                 self.set_points[2]
-        # Similarly calculate error for y and z axes
+        # Catch the exception thrown by anything wrong happens in calculating error and print the error message
 
-        except:
-            pass
+        except Exception as e:
+            print(e)
 
         # Calculate derivative and intergral errors. Apply anti windup on integral error (You can use your own method for anti windup, an example is shown here)
+        
+        self.derivative_error[0] = self.error[0] - self.previous_error[0]
+        self.derivative_error[1] = self.error[1] - self.previous_error[1]
+        self.derivative_error[2] = self.error[2] - self.previous_error[2]
+        self.sum_error[0] = self.sum_error[0] + self.error[0]
+        self.sum_error[1] = self.sum_error[1] + self.error[1]
+        self.sum_error[2] = self.sum_error[2] + self.error[2]
 
-        # self.integral[0] = (self.integral[0] + self.error[0])
-        # if self.integral[0] > SUM_ERROR_ROLL_LIMIT:
-        #     self.integral[0] = SUM_ERROR_ROLL_LIMIT
-        # if self.integral[0] < -SUM_ERROR_ROLL_LIMIT:
-        #     self.integral[0] = -SUM_ERROR_ROLL_LIMIT
+        # Check for sum_error limits and apply anti windup.
+        self.sum_error[0] = self.limit(self.sum_error[0], SUM_ERROR_ROLL_LIMIT, -SUM_ERROR_ROLL_LIMIT)
+        self.sum_error[1] = self.limit(self.sum_error[1], SUM_ERROR_PITCH_LIMIT, -SUM_ERROR_PITCH_LIMIT)
+        self.sum_error[2] = self.limit(self.sum_error[2], SUM_ERROR_THROTTLE_LIMIT, -SUM_ERROR_THROTTLE_LIMIT)
+        
 
         # Save current error in previous error
+        self.previous_error=self.error
 
         # 1 : calculating Error, Derivative, Integral for Pitch error : y axis
+        
 
         # 2 : calculating Error, Derivative, Integral for Alt error : z axis
 
