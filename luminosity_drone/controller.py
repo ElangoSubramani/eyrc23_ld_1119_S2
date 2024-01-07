@@ -5,6 +5,8 @@ Controller for the drone
 """
 
 # standard imports
+
+# Copy has two main functions copy() -> same instance and deepcopy() -> new instance
 import copy
 import time
 
@@ -20,16 +22,25 @@ from swift_msgs.msg import PIDError, RCMessage
 from swift_msgs.srv import CommandBool
 
 
+# Constants for ROLL, PITCH and THROTTLE min,max,base and sum_error limits.
 
 MIN_ROLL = 1250
 BASE_ROLL = 1500
 MAX_ROLL = 1600
 SUM_ERROR_ROLL_LIMIT = 10000
 
+MIN_PITCH = 1250
+BASE_PITCH = 1500
+MAX_PITCH = 1600
+SUM_ERROR_PITCH_LIMIT = 10000
+
+MIN_TROTTLE = 1250
+BASE_ROLL = 1500
+MAX_ROLL = 1600
+SUM_ERROR_THROTTLE_LIMIT = 10000
+
 
 DRONE_WHYCON_POSE = [[], [], []]
-
-# Similarly, create upper and lower limits, base value, and max sum error values for roll and pitch
 
 class DroneController():
     def __init__(self,node):
@@ -44,18 +55,27 @@ class DroneController():
         self.arming_service_client = self.node.create_client(CommandBool,service_endpoint)
         self.set_points = [0, 0, 0]         # Setpoints for x, y, z respectively      
         
-        self.error = [0, 0, 0]         # Error for roll, pitch and throttle        
-
-        # Create variables for integral and differential error
-
-        # Create variables for previous error and sum_error
-
+        self.error = [0, 0, 0]          # Current Error for roll, pitch and throttle  
+        self.integeral_error = [0,0,0]  #Integral error for roll,pitch and throttle
+        self.derivative_error = [0,0,0] #Derivative error for roll,pitch and throttle
+        self.previous_error = [0,0,0]   #Previous error for roll,pitch and throttle
+        self.sum_error = [0,0,0]        #Previous error for roll,pitch and throttle'
+        
+        # LS[0]=roll, ls[1]=pitch, ls[2]=throttle
+        
+        # PID Controll factors for roll, pitch and throttle
+        
         self.Kp = [ 0 * 0.01  , 0 * 0.01  , 0 * 0.01  ]
-
-        # Similarly create variables for Kd and Ki
+        self.Ki = [ 0 * 0.01  , 0 * 0.01  , 0 * 0.01  ]
+        self.Kd = [ 0 * 0.01  , 0 * 0.01  , 0 * 0.01  ]
+        # Similarly add callbacks for other subscribers
+        # TODO
+           # 1. Create pubs and subs based on ros2 topic
+           # 2. Complete PID Algorithm
+           # 3. Test the algorithm mannually
 
         # Create subscriber for WhyCon 
-        
+   
         self.whycon_sub = node.create_subscription(PoseArray,"/whycon/poses",self.whycon_poses_callback,1)
         
         # Similarly create subscribers for pid_tuning_altitude, pid_tuning_roll, pid_tuning_pitch and any other subscriber if required
@@ -81,7 +101,7 @@ class DroneController():
         self.Ki[2] = msg.ki * 0.0001
         self.Kd[2] = msg.kd * 0.1
 
-    # Similarly add callbacks for other subscribers
+    
 
 
     def pid(self):          # PID algorithm
@@ -115,7 +135,7 @@ class DroneController():
     #------------------------------------------------------------------------------------------------------------------------
 
 
-        self.publish_data_to_rpi( roll = 1500, pitch = 1500, throttle = 1000)
+        self.publish_data_to_rpi( roll = 1500, pitch = 1500, throttle = 1450) #Replaced 1000 by 1450 as instruced in the video
 
         #Replace the roll pitch and throttle values as calculated by PID 
         
@@ -191,10 +211,11 @@ class DroneController():
     # Function to disarm the drone 
 
     def disarm(self):
+        self.node.get_logger().info("Calling Disarm service")
+        self.commandbool.value = False
+        self.future = self.arming_service_client.call_async(self.commandbool)
 
-        # Create the disarm function
-
-        pass
+      
 
 
 def main(args=None):
@@ -213,7 +234,7 @@ def main(args=None):
             controller.pid()
             if node.get_clock().now().to_msg().sec - controller.last_whycon_pose_received_at > 1:
                 node.get_logger().error("Unable to detect WHYCON poses")
-            rclpy.spin_once(node) # Sleep for 1/30 secs
+            rclpy.spin_once(node, timeout_sec=0.033) # Sleep for 1/30 secs, It will give 0.033 Secs to complete the single spin (Callbacks..)
         
 
     except Exception as err:
