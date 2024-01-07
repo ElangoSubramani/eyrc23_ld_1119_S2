@@ -203,16 +203,13 @@ class DroneController():
         self.previous_error = self.error
 
         # 1 : calculating Error, Derivative, Integral for Pitch error : y axis
-        self.roll = 1500+(self.Kp[0]*self.error[0]+self.Ki[0]
-                          * self.sum_error[0]+self.Kd[0]*self.derivative_error[0])
-        self.pitch = 1500+(self.Kp[1]*self.error[1]+self.Ki[1]
-                           * self.sum_error[1]+self.Kd[1]*self.derivative_error[1])
-        self.throttle = 1500 + (self.Kp[2]*self.error[2]+self.Ki[2]
-                                * self.sum_error[2]+self.Kd[2]*self.derivative_error[2])
+        self.roll = BASE_ROLL+(self.Kp[0]*self.error[0]+self.Ki[0]
+                               * self.sum_error[0]+self.Kd[0]*self.derivative_error[0])
+        self.pitch = BASE_PITCH+(self.Kp[1]*self.error[1]+self.Ki[1]
+                                 * self.sum_error[1]+self.Kd[1]*self.derivative_error[1])
+        self.throttle = BASE_TROTTLE + (self.Kp[2]*self.error[2]+self.Ki[2]
+                                        * self.sum_error[2]+self.Kd[2]*self.derivative_error[2])
 
-        self.throttle = self.limit(self.throttle, MAX_TROTTLE, MIN_TROTTLE)
-        self.pitch = self.limit(self.pitch, MAX_PITCH, MIN_PITCH)
-        self.roll = self.limit(self.roll, MAX_ROLL, MIN_ROLL)
         # This will call the custom_callback function to publish values for plotting in plotjuggler
         self.custom_callback()
 
@@ -269,10 +266,17 @@ class DroneController():
         #     elif index == 2:
         #         self.rc_message.rc_throttle = int(filtered_signal[-1])
 
-        if self.rc_message.rc_roll > MAX_ROLL:  # checking range i.e. bet 1000 and 2000
-            self.rc_message.rc_roll = MAX_ROLL
-        elif self.rc_message.rc_roll < MIN_ROLL:
-            self.rc_message.rc_roll = MIN_ROLL
+        self.rc_message.rc_throttle = self.limit(
+            self.rc_message.rc_throttle, MAX_TROTTLE, MIN_TROTTLE)
+        self.rc_message.rc_pitch = self.limit(
+            self.rc_message.rc_pitch, MAX_PITCH, MIN_PITCH)
+        self.rc_message.rc_roll = self.limit(
+            self.rc_message.rc_roll, MAX_ROLL, MIN_ROLL)
+
+        # if self.rc_message.rc_roll > MAX_ROLL:  # checking range i.e. bet 1000 and 2000
+        #     self.rc_message.rc_roll = MAX_ROLL
+        # elif self.rc_message.rc_roll < MIN_ROLL:
+        #     self.rc_message.rc_roll = MIN_ROLL
 
         # Similarly add bounds for pitch yaw and throttle
 
