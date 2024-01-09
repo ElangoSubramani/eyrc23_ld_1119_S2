@@ -327,6 +327,9 @@ def main(args=None):
                 node.get_logger().error("Unable to detect WHYCON poses")
             # Sleep for 1/30 secs, It will give 0.033 Secs to complete the single spin (Callbacks..)
             rclpy.spin_once(node, timeout_sec=0.033)
+            """rclpy.spin_once is consistently running at approximately 40 Hz instead of the expected 30 Hz, 
+            it suggests that the code inside your loop is likely taking less than 0.033 seconds to execute, 
+            allowing the loop to complete more iterations within the desired time period."""
             # time.sleep(0.033)
 
     except Exception as err:
