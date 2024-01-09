@@ -186,7 +186,9 @@ class DroneController():
             print("PID exception", e)
 
         # Calculate derivative and intergral errors. Apply anti windup on integral error (You can use your own method for anti windup, an example is shown here)
-
+        
+        # TODO
+         # 1.) Check with the whycon axis to verify the roll and pitch axis and -  or  +
         self.derivative_error[0] = self.error[0] - self.previous_error[0]
         self.derivative_error[1] = self.error[1] - self.previous_error[1]
         self.derivative_error[2] = self.error[2] - self.previous_error[2]
