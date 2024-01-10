@@ -317,7 +317,7 @@ def main(args=None):
     node.get_logger().info("Entering PID controller loop")
 
     controller = DroneController(node)
-    # controller.arm() #cTemporarily commented for testing
+    controller.arm() #cTemporarily commented for testing
     node.get_logger().info("Armed")
 
     try:
