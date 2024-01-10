@@ -24,20 +24,20 @@ from std_msgs.msg import Float64
 
 
 # Constants for ROLL, PITCH and THROTTLE min,max,base and sum_error limits.
-
+# Limits are changed as @doubt temp
 MIN_ROLL = 1250
-BASE_ROLL = 1500
+BASE_ROLL = 1450
 MAX_ROLL = 1600
 SUM_ERROR_ROLL_LIMIT = 10000
 
 MIN_PITCH = 1250
-BASE_PITCH = 1500
+BASE_PITCH = 1450
 MAX_PITCH = 1600
 SUM_ERROR_PITCH_LIMIT = 10000
 
 MIN_TROTTLE = 1250
-BASE_TROTTLE = 1500
-MAX_TROTTLE = 1600
+BASE_TROTTLE = 1450
+MAX_TROTTLE = 1800
 SUM_ERROR_THROTTLE_LIMIT = 10000
 
 
@@ -68,7 +68,7 @@ class DroneController():
         self.derivative_error = [0, 0, 0]
         # Previous error for roll,pitch and throttle
         self.previous_error = [0, 0, 0]
-        # Previous error for roll,pitch and throttle'
+        # Sum error for roll,pitch and throttle'
         self.sum_error = [0, 0, 0]
 
         # LS[0]=roll, ls[1]=pitch, ls[2]=throttle
@@ -78,12 +78,8 @@ class DroneController():
         self.Kp = [0 * 0.01, 0 * 0.01, 0 * 0.01]
         self.Ki = [0 * 0.01, 0 * 0.01, 0 * 0.01]
         self.Kd = [0 * 0.01, 0 * 0.01, 0 * 0.01]
-        # Similarly add callbacks for other subscribers
-        # TODO
-        # 1. Create pubs and subs based on ros2 topic
-        # 2. Complete PID Algorithm
-        # 3. Test the algorithm mannually
-
+        # Similarly add callbacks for other subscribers are in 1/30s
+  
         # Whycon subscriber
 
         self.whycon_sub = node.create_subscription(
@@ -118,6 +114,8 @@ class DroneController():
             Float64, 'upper_bound_topic', 1)
         self.throttle_publisher = node.create_publisher(
             Float64, 'throttle_topic', 1)
+     
+        
 
     def custom_callback(self):
         # Publish values to respective topics
@@ -166,6 +164,9 @@ class DroneController():
             return min_value
         else:
             return input_value
+            
+         # Creating timed call back
+    self.timer = self.create_timer(1/30, self.pid) 
 
     def pid(self):          # PID algorithm
 
@@ -217,6 +218,8 @@ class DroneController():
 
         # This will call the custom_callback function to publish values for plotting in plotjuggler
         self.custom_callback()
+        # TODO 
+            # 1. Try Limiting the valutes  x,y,z before sending to the lowpass filter 
 
         # 2 : calculating Error, Derivative, Integral for Alt error : z axis
 
@@ -240,6 +243,7 @@ class DroneController():
             )
         )
 
+
     def publish_data_to_rpi(self, roll, pitch, throttle):
 
         self.rc_message.rc_throttle = int(throttle)
@@ -247,7 +251,7 @@ class DroneController():
         self.rc_message.rc_pitch = int(pitch)
 
         # Send constant 1500 to rc_message.rc_yaw
-        self.rc_message.rc_yaw = int(1500)
+        self.rc_message.rc_yaw = int(1450)
 
         # BUTTERWORTH FILTER
         # span = 15
@@ -328,7 +332,7 @@ def main(args=None):
 
                 node.get_logger().error("Unable to detect WHYCON poses")
             # Sleep for 1/30 secs, It will give 0.033 Secs to complete the single spin (Callbacks..)
-            rclpy.spin_once(node, timeout_sec=0.033)
+            rclpy.spin(node) # Spin_once  changed to spin the node
             """rclpy.spin_once is consistently running at approximately 40 Hz instead of the expected 30 Hz, 
             it suggests that the code inside your loop is likely taking less than 0.033 seconds to execute, 
             allowing the loop to complete more iterations within the desired time period."""
