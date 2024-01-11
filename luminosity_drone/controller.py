@@ -79,7 +79,7 @@ class DroneController():
         self.Ki = [0 * 0.01, 0 * 0.01, 0 * 0.01]
         self.Kd = [0 * 0.01, 0 * 0.01, 0 * 0.01]
         # Similarly add callbacks for other subscribers are in 1/30s
-  
+
         # Whycon subscriber
 
         self.whycon_sub = node.create_subscription(
@@ -105,7 +105,7 @@ class DroneController():
 
         self.pid_error_pub = node.create_publisher(
             PIDError, "/luminosity_drone/pid_error", 1)
-
+        self.timer = node.create_timer(1/30, self.pid)  # 1/30s timer
         # Mannually added publishers for plotting in plotjuggler
         self.zero_publisher = node.create_publisher(Float64, 'zero_topic', 1)
         self.lower_bound_publisher = node.create_publisher(
@@ -114,8 +114,6 @@ class DroneController():
             Float64, 'upper_bound_topic', 1)
         self.throttle_publisher = node.create_publisher(
             Float64, 'throttle_topic', 1)
-     
-        
 
     def custom_callback(self):
         # Publish values to respective topics
@@ -164,9 +162,8 @@ class DroneController():
             return min_value
         else:
             return input_value
-            
+
          # Creating timed call back
-    self.timer = self.create_timer(1/30, self.pid) 
 
     def pid(self):          # PID algorithm
 
@@ -187,7 +184,7 @@ class DroneController():
             print("PID exception", e)
 
         # Calculate derivative and intergral errors. Apply anti windup on integral error (You can use your own method for anti windup, an example is shown here)
-        
+
         # TODO
          # 1.) Check with the whycon axis to verify the roll and pitch axis and -  or  +
         self.derivative_error[0] = self.error[0] - self.previous_error[0]
@@ -218,8 +215,8 @@ class DroneController():
 
         # This will call the custom_callback function to publish values for plotting in plotjuggler
         self.custom_callback()
-        # TODO 
-            # 1. Try Limiting the valutes  x,y,z before sending to the lowpass filter 
+        # TODO
+        # 1. Try Limiting the valutes  x,y,z before sending to the lowpass filter
 
         # 2 : calculating Error, Derivative, Integral for Alt error : z axis
 
@@ -242,7 +239,6 @@ class DroneController():
                 zero_error=self.throttle,
             )
         )
-
 
     def publish_data_to_rpi(self, roll, pitch, throttle):
 
@@ -321,7 +317,8 @@ def main(args=None):
     node.get_logger().info("Entering PID controller loop")
 
     controller = DroneController(node)
-    controller.arm() #cTemporarily commented for testing
+    controller.arm()  # cTemporarily commented for testing
+    time.sleep(6)
     node.get_logger().info("Armed")
 
     try:
@@ -332,7 +329,7 @@ def main(args=None):
 
                 node.get_logger().error("Unable to detect WHYCON poses")
             # Sleep for 1/30 secs, It will give 0.033 Secs to complete the single spin (Callbacks..)
-            rclpy.spin(node) # Spin_once  changed to spin the node
+            rclpy.spin(node)  # Spin_once  changed to spin the node
             """rclpy.spin_once is consistently running at approximately 40 Hz instead of the expected 30 Hz, 
             it suggests that the code inside your loop is likely taking less than 0.033 seconds to execute, 
             allowing the loop to complete more iterations within the desired time period."""
