@@ -83,23 +83,23 @@ class DroneController():
         # Whycon subscriber
 
         self.whycon_sub = node.create_subscription(
-            PoseArray, "/whycon/poses", self.whycon_poses_callback, 1)
+            PoseArray, "/whycon/poses", self.whycon_poses_callback, rclpy.qos.QoSProfile(depth=10))
 
         # Subscribe to roll
         self.pid_roll = node.create_subscription(
-            PidTune, "/pid_tuning_roll", self.pid_tune_roll_callback, 1)
+            PidTune, "/pid_tuning_roll", self.pid_tune_roll_callback, rclpy.qos.QoSProfile(depth=10))
 
         # Subscribe to pitch
         self.pid_pitch = node.create_subscription(
-            PidTune, "/pid_tuning_pitch", self.pid_tune_pitch_callback, 1)
+            PidTune, "/pid_tuning_pitch", self.pid_tune_pitch_callback, rclpy.qos.QoSProfile(depth=10))
 
         # Subscribe to throttle
         self.pid_alt = node.create_subscription(
-            PidTune, "/pid_tuning_altitude", self.pid_tune_throttle_callback, 1)
+            PidTune, "/pid_tuning_altitude", self.pid_tune_throttle_callback, rclpy.qos.QoSProfile(depth=10))
 
         # Create publisher for sending commands to drone
 
-        self.rc_pub = node.create_publisher(RCMessage, "/swift/rc_command", 1)
+        self.rc_pub = node.create_publisher(RCMessage, "/swift/rc_command", rclpy.qos.QoSProfile(depth=10))
 
         # Create publisher for publishing errors for plotting in plotjuggler
 
@@ -107,13 +107,13 @@ class DroneController():
             PIDError, "/luminosity_drone/pid_error", 1)
         self.timer = node.create_timer(1/30, self.pid)  # 1/30s timer
         # Mannually added publishers for plotting in plotjuggler
-        self.zero_publisher = node.create_publisher(Float64, 'zero_topic', 1)
+        self.zero_publisher = node.create_publisher(Float64, 'zero_topic', rclpy.qos.QoSProfile(depth=10))
         self.lower_bound_publisher = node.create_publisher(
-            Float64, 'lower_bound_topic', 1)
+            Float64, 'lower_bound_topic', rclpy.qos.QoSProfile(depth=10))
         self.upper_bound_publisher = node.create_publisher(
-            Float64, 'upper_bound_topic', 1)
+            Float64, 'upper_bound_topic', rclpy.qos.QoSProfile(depth=10))
         self.throttle_publisher = node.create_publisher(
-            Float64, 'throttle_topic', 1)
+            Float64, 'throttle_topic', rclpy.qos.QoSProfile(depth=10))
 
     def custom_callback(self):
         # Publish values to respective topics
@@ -128,6 +128,7 @@ class DroneController():
         upper_bound_msg = Float64()
         upper_bound_msg.data = 5.0
         self.upper_bound_publisher.publish(upper_bound_msg)
+        # self.throttle_publisher.publish(float(self.rc_message.rc_throttle))
 
     def whycon_poses_callback(self, msg):
         self.last_whycon_pose_received_at = self.node.get_clock(
@@ -203,11 +204,11 @@ class DroneController():
             self.sum_error[1], SUM_ERROR_PITCH_LIMIT, -SUM_ERROR_PITCH_LIMIT)
         self.sum_error[2] = self.limit(
             self.sum_error[2], SUM_ERROR_THROTTLE_LIMIT, -SUM_ERROR_THROTTLE_LIMIT)
-        print("h",self.previous_error[2])
+        # print("1",self.previous_error[2])
 
         # Save current error in previous error
-        self.previous_error = self.error
-        print("2",self.previous_error[2])
+        self.previous_error[2] = self.error[2]
+        # print("2",self.previous_error[2])
 
         # 1 : calculating Error, Derivative, Integral for Pitch error : y axis
         self.roll = BASE_ROLL+(self.Kp[0]*self.error[0]+self.Ki[0]
@@ -228,8 +229,11 @@ class DroneController():
         # Write the PID equations and calculate the self.rc_message.rc_throttle, self.rc_message.rc_roll, self.rc_message.rc_pitch
 
     # ------------------------------------------------------------------------------------------------------------------------
-
-        self.publish_data_to_rpi(self.roll, self.pitch, self.throttle)
+        self.publish_data_to_rpi(self.roll, self.pitch, self.throttle)      
+        self.throttle=self.limit(self.throttle,MAX_TROTTLE,MIN_TROTTLE)
+        self.pitch=self.limit(self.pitch,MAX_PITCH,MIN_PITCH)
+        self.roll=self.limit(self.roll,MAX_ROLL,MIN_ROLL)
+        # self.publish_data_to_rpi(self.roll, self.pitch, self.throttle)
 
         # Replace the roll pitch and throttle values as calculated by PID
 
@@ -240,8 +244,8 @@ class DroneController():
                 roll_error=float(self.error[0]),
                 pitch_error=float(self.error[1]),
                 throttle_error=float(self.error[2]),
-                yaw_error=-0.0,
-                zero_error=self.throttle,
+                yaw_error=float(self.rc_message.rc_throttle),
+                zero_error=float(self.throttle),
             )
         )
 
@@ -255,26 +259,26 @@ class DroneController():
         self.rc_message.rc_yaw = int(1450)
 
         # BUTTERWORTH FILTER
-        # span = 15
-        # for index, val in enumerate([roll, pitch, throttle]):
-        #     DRONE_WHYCON_POSE[index].append(val)
-        #     if len(DRONE_WHYCON_POSE[index]) == span:
-        #         DRONE_WHYCON_POSE[index].pop(0)
-        #     if len(DRONE_WHYCON_POSE[index]) != span-1:
-        #         return
-        #     order = 3
-        #     fs = 60
-        #     fc = 5
-        #     nyq = 0.5 * fs
-        #     wc = fc / nyq
-        #     b, a = scipy.signal.butter(N=order, Wn=wc, btype='lowpass', analog=False, output='ba')
-        #     filtered_signal = scipy.signal.lfilter(b, a, DRONE_WHYCON_POSE[index])
-        #     if index == 0:
-        #         self.rc_message.rc_roll = int(filtered_signal[-1])
-        #     elif index == 1:
-        #         self.rc_message.rc_pitch = int(filtered_signal[-1])
-        #     elif index == 2:
-        #         self.rc_message.rc_throttle = int(filtered_signal[-1])
+        span = 15
+        for index, val in enumerate([roll, pitch, throttle]):
+            DRONE_WHYCON_POSE[index].append(val)
+            if len(DRONE_WHYCON_POSE[index]) == span:
+                DRONE_WHYCON_POSE[index].pop(0)
+            if len(DRONE_WHYCON_POSE[index]) != span-1:
+                return "Not enough data"
+            order = 3
+            fs = 60
+            fc = 5
+            nyq = 0.5 * fs
+            wc = fc / nyq
+            b, a = scipy.signal.butter(N=order, Wn=wc, btype='lowpass', analog=False, output='ba')
+            filtered_signal = scipy.signal.lfilter(b, a, DRONE_WHYCON_POSE[index])
+            if index == 0:
+                self.rc_message.rc_roll = int(filtered_signal[-1])
+            elif index == 1:
+                self.rc_message.rc_pitch = int(filtered_signal[-1])
+            elif index == 2:
+                self.rc_message.rc_throttle = int(filtered_signal[-1])
 
         self.rc_message.rc_throttle = self.limit(
             self.rc_message.rc_throttle, MAX_TROTTLE, MIN_TROTTLE)
@@ -289,6 +293,8 @@ class DroneController():
         #     self.rc_message.rc_roll = MIN_ROLL
 
         # Similarly add bounds for pitch yaw and throttle
+       
+        # print(self.rc_message.rc_throttle)
 
         self.rc_pub.publish(self.rc_message)
 
