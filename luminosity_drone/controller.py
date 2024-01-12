@@ -61,15 +61,15 @@ class DroneController():
         self.set_points = [0, 0, 22]
 
         # Current Error for roll, pitch and throttle
-        self.error = [0, 0, 0]
+        self.error = [0.0, 0.0, 0.0]
         # Integral error for roll,pitch and throttle
-        self.integeral_error = [0, 0, 0]
+        self.integeral_error = [0.0, 0.0, 0.0]
         # Derivative error for roll,pitch and throttle
-        self.derivative_error = [0, 0, 0]
+        self.derivative_error = [0.0, 0.0, 0.0]
         # Previous error for roll,pitch and throttle
-        self.previous_error = [0, 0, 0]
+        self.previous_error = [0.0, 0.0, 0.0]
         # Sum error for roll,pitch and throttle'
-        self.sum_error = [0, 0, 0]
+        self.sum_error = [0.0, 0.0, 0.0]
 
         # LS[0]=roll, ls[1]=pitch, ls[2]=throttle
 
@@ -151,8 +151,8 @@ class DroneController():
     # Callback function for throttle
 
     def pid_tune_throttle_callback(self, msg):
-        self.Kp[2] = msg.kp * 0.05
-        self.Ki[2] = msg.ki * 0.0001
+        self.Kp[2] = msg.kp * 0.01
+        self.Ki[2] = msg.ki * 0.1
         self.Kd[2] = msg.kd * 0.1
 
     def limit(self, input_value, max_value, min_value):
@@ -190,6 +190,8 @@ class DroneController():
         self.derivative_error[0] = self.error[0] - self.previous_error[0]
         self.derivative_error[1] = self.error[1] - self.previous_error[1]
         self.derivative_error[2] = self.error[2] - self.previous_error[2]
+        # print(self.derivative_error[2])
+        # print("ff",self.error[2],self.previous_error[2])
         self.sum_error[0] = self.sum_error[0] + self.error[0]
         self.sum_error[1] = self.sum_error[1] + self.error[1]
         self.sum_error[2] = self.sum_error[2] + self.error[2]
@@ -201,9 +203,11 @@ class DroneController():
             self.sum_error[1], SUM_ERROR_PITCH_LIMIT, -SUM_ERROR_PITCH_LIMIT)
         self.sum_error[2] = self.limit(
             self.sum_error[2], SUM_ERROR_THROTTLE_LIMIT, -SUM_ERROR_THROTTLE_LIMIT)
+        print("h",self.previous_error[2])
 
         # Save current error in previous error
         self.previous_error = self.error
+        print("2",self.previous_error[2])
 
         # 1 : calculating Error, Derivative, Integral for Pitch error : y axis
         self.roll = BASE_ROLL+(self.Kp[0]*self.error[0]+self.Ki[0]
@@ -212,6 +216,7 @@ class DroneController():
                                  * self.sum_error[1]+self.Kd[1]*self.derivative_error[1])
         self.throttle = BASE_TROTTLE + (self.Kp[2]*self.error[2]+self.Ki[2]
                                         * self.sum_error[2]+self.Kd[2]*self.derivative_error[2])
+        # print(self.Kd[2]*self .derivative_error[2])
 
         # This will call the custom_callback function to publish values for plotting in plotjuggler
         self.custom_callback()
@@ -317,7 +322,7 @@ def main(args=None):
     node.get_logger().info("Entering PID controller loop")
 
     controller = DroneController(node)
-    controller.arm()  # cTemporarily commented for testing
+    # controller.arm()  # cTemporarily commented for testing
     time.sleep(6)
     node.get_logger().info("Armed")
 
