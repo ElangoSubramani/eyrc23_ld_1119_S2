@@ -78,6 +78,10 @@ class DroneController():
         self.Kp = [0 * 0.01, 0 * 0.01, 0 * 0.01]
         self.Ki = [0 * 0.01, 0 * 0.01, 0 * 0.01]
         self.Kd = [0 * 0.01, 0 * 0.01, 0 * 0.01]
+
+        # self.Kp = [195 * 0.01, 249 * 0.01, 280 * 0.01]
+        # self.Ki = [63 * 0.00002, 39 * 0.00002, 401 * 0.00001]
+        # self.Kd = [693 * 0.01, 722 * 0.01, 1681 * 0.01]
         # Similarly add callbacks for other subscribers are in 1/30s
 
         # Whycon subscriber
@@ -173,10 +177,10 @@ class DroneController():
             # Why con pose array is a list of poses. We are using only the first pose.
             # Other wise it shows list out of bound exception
             if self.drone_whycon_pose_array.poses:
-                self.error[0] = self.drone_whycon_pose_array.poses[0].position.x - \
-                    self.set_points[0]
-                self.error[1] = self.drone_whycon_pose_array.poses[0].position.y - \
-                    self.set_points[1]
+                self.error[0] = -(self.drone_whycon_pose_array.poses[0].position.x - \
+                    self.set_points[0])
+                self.error[1] = -(self.drone_whycon_pose_array.poses[0].position.y - \
+                    self.set_points[1])
                 self.error[2] = self.drone_whycon_pose_array.poses[0].position.z - \
                     self.set_points[2]
         # Catch the exception thrown by anything wrong happens in calculating error and print the error message
@@ -227,12 +231,14 @@ class DroneController():
         # 2 : calculating Error, Derivative, Integral for Alt error : z axis
 
         # Write the PID equations and calculate the self.rc_message.rc_throttle, self.rc_message.rc_roll, self.rc_message.rc_pitch
-
+       
     # ------------------------------------------------------------------------------------------------------------------------
-        self.publish_data_to_rpi(self.roll, self.pitch, self.throttle)      
+             
         self.throttle=self.limit(self.throttle,MAX_TROTTLE,MIN_TROTTLE)
         self.pitch=self.limit(self.pitch,MAX_PITCH,MIN_PITCH)
         self.roll=self.limit(self.roll,MAX_ROLL,MIN_ROLL)
+        self.publish_data_to_rpi(self.roll, self.pitch, self.throttle) 
+        # print(self.throttle)
         # self.publish_data_to_rpi(self.roll, self.pitch, self.throttle)
 
         # Replace the roll pitch and throttle values as calculated by PID
