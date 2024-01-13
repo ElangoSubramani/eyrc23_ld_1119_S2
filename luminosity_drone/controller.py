@@ -25,19 +25,19 @@ from std_msgs.msg import Float64
 
 # Constants for ROLL, PITCH and THROTTLE min,max,base and sum_error limits.
 # Limits are changed as @doubt temp
-MIN_ROLL = 1250
-BASE_ROLL = 1450
-MAX_ROLL = 1600
+MIN_ROLL = 1000
+BASE_ROLL = 1000
+MAX_ROLL = 1500
 SUM_ERROR_ROLL_LIMIT = 10000
 
-MIN_PITCH = 1250
-BASE_PITCH = 1450
-MAX_PITCH = 1600
+MIN_PITCH = 1000
+BASE_PITCH = 1000
+MAX_PITCH = 1500
 SUM_ERROR_PITCH_LIMIT = 10000
 
-MIN_TROTTLE = 1250
-BASE_TROTTLE = 1450
-MAX_TROTTLE = 1800
+MIN_TROTTLE = 1000
+BASE_TROTTLE = 1000
+MAX_TROTTLE = 1700
 SUM_ERROR_THROTTLE_LIMIT = 10000
 
 
@@ -221,6 +221,12 @@ class DroneController():
                                  * self.sum_error[1]+self.Kd[1]*self.derivative_error[1])
         self.throttle = BASE_TROTTLE + (self.Kp[2]*self.error[2]+self.Ki[2]
                                         * self.sum_error[2]+self.Kd[2]*self.derivative_error[2])
+        print(self.throttle)
+        print(self.roll)
+        print(self.pitch)
+        print(self.rc_message.rc_throttle)
+        print(self.rc_message.rc_roll)
+        print(self.rc_message.rc_pitch)
         # print(self.Kd[2]*self .derivative_error[2])
 
         # This will call the custom_callback function to publish values for plotting in plotjuggler
@@ -262,7 +268,7 @@ class DroneController():
         self.rc_message.rc_pitch = int(pitch)
 
         # Send constant 1500 to rc_message.rc_yaw
-        self.rc_message.rc_yaw = int(1450)
+        self.rc_message.rc_yaw = int(1000)
 
         # BUTTERWORTH FILTER
         span = 15
