@@ -75,13 +75,13 @@ class DroneController():
 
         # PID Controll factors for roll, pitch and throttle
 
-        self.Kp = [0 * 0.01, 0 * 0.01, 0 * 0.01]
-        self.Ki = [0 * 0.01, 0 * 0.01, 0 * 0.01]
-        self.Kd = [0 * 0.01, 0 * 0.01, 0 * 0.01]
+        # self.Kp = [0 * 0.01, 0 * 0.01, 0 * 0.01]
+        # self.Ki = [0 * 0.01, 0 * 0.01, 0 * 0.01]
+        # self.Kd = [0 * 0.01, 0 * 0.01, 0 * 0.01]
 
-        # self.Kp = [195 * 0.01, 249 * 0.01, 280 * 0.01]
-        # self.Ki = [63 * 0.00002, 39 * 0.00002, 401 * 0.00001]
-        # self.Kd = [693 * 0.01, 722 * 0.01, 1681 * 0.01]
+        self.Kp = [195 * 0.01, 249 * 0.01, 280 * 0.01]
+        self.Ki = [63 * 0.00002, 39 * 0.00002, 401 * 0.00001]
+        self.Kd = [693 * 0.01, 722 * 0.01, 1681 * 0.01]
         # Similarly add callbacks for other subscribers are in 1/30s
 
         # Whycon subscriber
@@ -117,7 +117,7 @@ class DroneController():
         self.upper_bound_publisher = node.create_publisher(
             Float64, 'upper_bound_topic', rclpy.qos.QoSProfile(depth=10))
         self.throttle_publisher = node.create_publisher(
-            Float64, 'throttle_topic', rclpy.qos.QoSProfile(depth=10))
+            Float64, 'throttle_topic', rclpy.qos.QoSProfile(depth=1))
 
     def custom_callback(self):
         # Publish values to respective topics
