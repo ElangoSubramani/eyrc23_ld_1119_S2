@@ -237,8 +237,9 @@ class DroneController():
         self.throttle=self.limit(self.throttle,MAX_TROTTLE,MIN_TROTTLE)
         self.pitch=self.limit(self.pitch,MAX_PITCH,MIN_PITCH)
         self.roll=self.limit(self.roll,MAX_ROLL,MIN_ROLL)
+
         self.publish_data_to_rpi(self.roll, self.pitch, self.throttle) 
-        # print(self.throttle)
+      
         # self.publish_data_to_rpi(self.roll, self.pitch, self.throttle)
 
         # Replace the roll pitch and throttle values as calculated by PID
