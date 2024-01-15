@@ -26,19 +26,19 @@ from std_msgs.msg import Float64
 # Constants for ROLL, PITCH and THROTTLE min,max,base and sum_error limits.
 # Limits are changed as @doubt temp
 MIN_ROLL = 1250
-BASE_ROLL = 1450
+BASE_ROLL = 1483 #Fixed 1485 when roll increases moves left
 MAX_ROLL = 1600
 SUM_ERROR_ROLL_LIMIT = 10000
 
 MIN_PITCH = 1250
-BASE_PITCH = 1450
+BASE_PITCH = 1495 #Fixed 1495 when pitch increases moves down
 MAX_PITCH = 1600
 SUM_ERROR_PITCH_LIMIT = 10000
 
 MIN_TROTTLE = 1250
-BASE_TROTTLE = 1450
+BASE_TROTTLE = 1400
 MAX_TROTTLE = 1800
-SUM_ERROR_THROTTLE_LIMIT = 10000
+SUM_ERROR_THROTTLE_LIMIT = 1000
 
 
 DRONE_WHYCON_POSE = [[], [], []]
@@ -75,13 +75,13 @@ class DroneController():
 
         # PID Controll factors for roll, pitch and throttle
 
-        # self.Kp = [0 * 0.01, 0 * 0.01, 0 * 0.01]
-        # self.Ki = [0 * 0.01, 0 * 0.01, 0 * 0.01]
-        # self.Kd = [0 * 0.01, 0 * 0.01, 0 * 0.01]
+        self.Kp = [0 * 0.01, 0 * 0.01, 0 * 0.01]
+        self.Ki = [0 * 0.01, 0 * 0.01, 0 * 0.01]
+        self.Kd = [0 * 0.01, 0 * 0.01, 0 * 0.01]
 
-        self.Kp = [195 * 0.01, 249 * 0.01, 280 * 0.01]
-        self.Ki = [63 * 0.00002, 39 * 0.00002, 401 * 0.00001]
-        self.Kd = [693 * 0.01, 722 * 0.01, 1681 * 0.01]
+        # self.Kp = [195 * 0.01, 249 * 0.01, 280 * 0.01]
+        # self.Ki = [63 * 0.00002, 39 * 0.00002, 401 * 0.00001]
+        # self.Kd = [693 * 0.01, 722 * 0.01, 1681 * 0.01]
         # Similarly add callbacks for other subscribers are in 1/30s
 
         # Whycon subscriber
@@ -263,7 +263,7 @@ class DroneController():
         self.rc_message.rc_pitch = int(pitch)
 
         # Send constant 1500 to rc_message.rc_yaw
-        self.rc_message.rc_yaw = int(1450)
+        self.rc_message.rc_yaw = int(1500)
 
         # BUTTERWORTH FILTER
         span = 15
@@ -335,7 +335,7 @@ def main(args=None):
     node.get_logger().info("Entering PID controller loop")
 
     controller = DroneController(node)
-    # controller.arm()  # cTemporarily commented for testing
+    controller.arm()  # cTemporarily commented for testing
     time.sleep(6)
     node.get_logger().info("Armed")
 
